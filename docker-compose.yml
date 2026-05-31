@@ -1,0 +1,64 @@
+services:
+  http-server-projeto-korp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: http-server-projeto-korp:latest
+    container_name: http-server-projeto-korp
+    restart: unless-stopped
+    expose:
+      - "8080"
+    networks:
+      - projeto-korp-network
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: nginx-projeto-korp
+    restart: unless-stopped
+    depends_on:
+      - http-server-projeto-korp
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    networks:
+      - projeto-korp-network
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: prometheus-projeto-korp
+    restart: unless-stopped
+    depends_on:
+      - http-server-projeto-korp
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    networks:
+      - projeto-korp-network
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: grafana-projeto-korp
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - projeto-korp-network
+
+networks:
+  projeto-korp-network:
+    external: true
+    name: projeto-korp-network

@@ -1,0 +1,33 @@
+{
+  "id": null,
+  "uid": "http-server-projeto-korp",
+  "title": "HTTP Server Projeto Korp",
+  "tags": ["korp", "devops", "prometheus"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Disponibilidade do serviço",
+      "gridPos": {"x": 0, "y": 0, "w": 8, "h": 6},
+      "targets": [{"expr": "http_server_projeto_korp_up", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "none", "mappings": [{"type": "value", "options": {"1": {"text": "UP"}, "0": {"text": "DOWN"}}}]}, "overrides": []}
+    },
+    {
+      "type": "stat",
+      "title": "Volume de requisições",
+      "gridPos": {"x": 8, "y": 0, "w": 8, "h": 6},
+      "targets": [{"expr": "http_requests_total", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}
+    },
+    {
+      "type": "timeseries",
+      "title": "Requisições ao longo do tempo",
+      "gridPos": {"x": 0, "y": 6, "w": 16, "h": 8},
+      "targets": [{"expr": "rate(http_requests_total[1m])", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []}
+    }
+  ]
+}

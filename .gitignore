@@ -1,0 +1,15 @@
+# Pacotes/artefatos locais
+*.zip
+*.tar.gz
+*.log
+
+# Variáveis locais
+.env
+.env.*
+!.env.example
+
+# Sistema/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

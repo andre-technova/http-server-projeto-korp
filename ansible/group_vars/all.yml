@@ -1,0 +1,4 @@
+project_name: http-server-projeto-korp
+project_deploy_dir: /opt/http-server-projeto-korp
+docker_network_name: projeto-korp-network
+compose_command: docker compose

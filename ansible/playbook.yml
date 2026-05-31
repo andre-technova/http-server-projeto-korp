@@ -1,0 +1,145 @@
+---
+- name: Provisionar Projeto Korp DevOps em ambiente local
+  hosts: local
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Exibir sistema operacional detectado
+      ansible.builtin.debug:
+        msg: "Sistema detectado: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+
+    - name: Validar sistema Debian/Ubuntu
+      ansible.builtin.assert:
+        that:
+          - ansible_os_family == "Debian"
+        fail_msg: "Este playbook foi preparado para Ubuntu/Debian."
+        success_msg: "Ambiente Debian/Ubuntu validado."
+
+    - name: Atualizar cache do APT
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Instalar dependências, SSH, Docker e Docker Compose v2
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - git
+          - unzip
+          - gnupg
+          - lsb-release
+          - python3
+          - python3-apt
+          - openssh-server
+          - docker.io
+          - docker-compose-v2
+        state: present
+
+    - name: Habilitar e iniciar SSH
+      ansible.builtin.service:
+        name: ssh
+        state: started
+        enabled: true
+
+    - name: Habilitar e iniciar Docker
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Validar versão do Docker
+      ansible.builtin.command: docker --version
+      register: docker_version
+      changed_when: false
+
+    - name: Validar versão do Docker Compose
+      ansible.builtin.command: docker compose version
+      register: docker_compose_version
+      changed_when: false
+
+    - name: Exibir versões instaladas
+      ansible.builtin.debug:
+        msg:
+          - "{{ docker_version.stdout }}"
+          - "{{ docker_compose_version.stdout }}"
+          - "Comando Compose em uso: docker compose"
+
+    - name: Criar diretório de deploy do projeto
+      ansible.builtin.file:
+        path: "{{ project_deploy_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Copiar arquivos do projeto para /opt
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../"
+        dest: "{{ project_deploy_dir }}/"
+        owner: root
+        group: root
+        mode: preserve
+
+    - name: Criar rede Docker bridge de forma idempotente
+      ansible.builtin.shell: |
+        docker network inspect {{ docker_network_name }} >/dev/null 2>&1 || docker network create --driver bridge {{ docker_network_name }}
+      args:
+        executable: /bin/bash
+      register: docker_network_result
+      changed_when: "'Created' in docker_network_result.stdout"
+
+    - name: Remover containers órfãos anteriores do projeto
+      ansible.builtin.command: docker compose down --remove-orphans
+      args:
+        chdir: "{{ project_deploy_dir }}"
+      register: compose_down
+      changed_when: false
+      failed_when: false
+
+    - name: Buildar imagem da aplicação Go sem cache
+      ansible.builtin.command: docker compose build --no-cache http-server-projeto-korp
+      args:
+        chdir: "{{ project_deploy_dir }}"
+      register: compose_build
+      changed_when: true
+
+    - name: Subir containers com Docker Compose
+      ansible.builtin.command: docker compose up -d --remove-orphans
+      args:
+        chdir: "{{ project_deploy_dir }}"
+      register: compose_up
+      changed_when: true
+
+    - name: Aguardar o endpoint /projeto-korp responder via NGINX
+      ansible.builtin.uri:
+        url: http://localhost:80/projeto-korp
+        method: GET
+        status_code: 200
+        return_content: true
+      register: endpoint_response
+      retries: 20
+      delay: 3
+      until: endpoint_response.status == 200
+
+    - name: Validar endpoint /metrics via NGINX
+      ansible.builtin.uri:
+        url: http://localhost:80/metrics
+        method: GET
+        status_code: 200
+        return_content: true
+      register: metrics_response
+
+    - name: Exibir resposta do endpoint principal
+      ansible.builtin.debug:
+        msg: "{{ endpoint_response.content }}"
+
+    - name: Exibir resumo de acesso
+      ansible.builtin.debug:
+        msg:
+          - "Aplicação:  http://localhost:80/projeto-korp"
+          - "Métricas:   http://localhost:80/metrics"
+          - "Prometheus: http://localhost:9090"
+          - "Grafana:    http://localhost:3000"
+          - "Grafana login: admin / admin"
