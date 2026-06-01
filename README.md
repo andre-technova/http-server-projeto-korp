@@ -16,18 +16,16 @@ Provisionar, de forma automatizada, um serviço HTTP em Golang chamado `http-ser
 
 ## Execução em Ubuntu 24 limpo
 
-O Ubuntu 24 pode não trazer Docker, Docker Compose, curl, Git, Ansible ou OpenSSH Server instalados por padrão. Por isso, o projeto possui um bootstrap mínimo e depois executa o provisionamento principal com Ansible.
+A solução foi validada em uma VM Ubuntu 24.04 limpa. O ambiente não assume que Docker, Docker Compose, curl, Git, Ansible ou OpenSSH Server já estejam instalados.
+
+Clone o repositório:
 
 ```bash
 cd /home/technova
-mkdir -p /home/technova/korp-devops
-mv /home/technova/http-server-projeto-korp.tar.gz /home/technova/korp-devops/ 2>/dev/null || true
-cd /home/technova/korp-devops
-tar -xzf http-server-projeto-korp.tar.gz
+mkdir -p korp-devops
+cd korp-devops
+git clone https://github.com/andre-technova/http-server-projeto-korp.git
 cd http-server-projeto-korp
-chmod +x 00-bootstrap-ubuntu24.sh 01-provision-local.sh
-./01-provision-local.sh
-```
 
 ## Comando principal Ansible
 
