@@ -151,13 +151,19 @@ BECOME password:
 
 ## Execução direta do Ansible
 
-Após o bootstrap inicial, o playbook também pode ser executado diretamente:
+Após o bootstrap inicial, o playbook também pode ser executado diretamente.
+
+Com usuário comum com permissão de sudo:
 
 ```bash
 ansible-playbook -i ansible/inventory.ini ansible/playbook.yml --ask-become-pass
 ```
 
-Se estiver executando como `root`, o parâmetro `--ask-become-pass` não é necessário.
+Como `root`:
+
+```bash
+ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
+```
 
 ---
 
@@ -184,8 +190,16 @@ curl http://localhost:80/metrics
 Exemplo de métricas expostas:
 
 ```text
+# HELP http_server_projeto_korp_up Disponibilidade do servico http-server-projeto-korp.
+# TYPE http_server_projeto_korp_up gauge
 http_server_projeto_korp_up 1
+
+# HELP http_requests_total Total de requisicoes recebidas no endpoint /projeto-korp.
+# TYPE http_requests_total counter
 http_requests_total{service="http-server-projeto-korp",endpoint="/projeto-korp"} 2
+
+# HELP http_server_last_request_timestamp_seconds Timestamp Unix da ultima requisicao recebida no endpoint /projeto-korp.
+# TYPE http_server_last_request_timestamp_seconds gauge
 http_server_last_request_timestamp_seconds{service="http-server-projeto-korp"} 1780275230
 ```
 
@@ -361,6 +375,18 @@ Também foram validados:
 * Execução dos containers via Docker Compose
 * Dashboard do Grafana
 * Coleta de métricas pelo Prometheus
+
+---
+
+## Documentação complementar
+
+A defesa técnica do projeto está disponível em:
+
+```text
+docs/defesa-tecnica.md
+```
+
+Esse documento resume a arquitetura, decisões técnicas, validação realizada e possíveis melhorias futuras.
 
 ---
 
